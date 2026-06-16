@@ -9,11 +9,12 @@ import type { ApiSession } from '../../../api'
 
 interface PinnedBarProps {
   sessionLookup: Map<string, ApiSession>
+  selectedSessionId: string | null
   onSelectSession: (session: ApiSession) => void
   onRenameSession: (sessionId: string, newTitle: string) => void
 }
 
-export function PinnedBar({ sessionLookup, onSelectSession, onRenameSession }: PinnedBarProps) {
+export function PinnedBar({ sessionLookup, selectedSessionId, onSelectSession, onRenameSession }: PinnedBarProps) {
   const entries = useSyncExternalStore(
     pinnedSessionsStore.subscribe,
     pinnedSessionsStore.getSnapshot,
@@ -28,6 +29,7 @@ export function PinnedBar({ sessionLookup, onSelectSession, onRenameSession }: P
           key={entry.sessionId}
           entry={entry}
           resolvedSession={sessionLookup.get(entry.sessionId)}
+          isSelected={entry.sessionId === selectedSessionId}
           onSelect={onSelectSession}
           onRename={onRenameSession}
         />
@@ -39,11 +41,12 @@ export function PinnedBar({ sessionLookup, onSelectSession, onRenameSession }: P
 interface PinnedItemProps {
   entry: PinnedSessionEntry
   resolvedSession?: ApiSession
+  isSelected: boolean
   onSelect: (session: ApiSession) => void
   onRename: (sessionId: string, newTitle: string) => void
 }
 
-function PinnedItem({ entry, resolvedSession, onSelect, onRename }: PinnedItemProps) {
+function PinnedItem({ entry, resolvedSession, isSelected, onSelect, onRename }: PinnedItemProps) {
   const { t } = useTranslation(['commands', 'common', 'chat'])
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(entry.title)
@@ -122,11 +125,15 @@ function PinnedItem({ entry, resolvedSession, onSelect, onRename }: PinnedItemPr
   return (
     <div
       onClick={handleClick}
-      className="group relative flex items-start pl-[6px] pr-2 py-1.5 rounded-md cursor-pointer hover:bg-bg-200/40 transition-colors duration-150"
+      className={`group relative flex items-start pl-[6px] pr-2 py-1.5 rounded-md cursor-pointer transition-all duration-200 border border-transparent ${
+        isSelected ? 'bg-bg-000 shadow-sm ring-1 ring-border-200/50' : 'hover:bg-bg-200/40'
+      }`}
     >
       <div className="flex-1 min-w-0 mr-1 group-hover:mr-[52px] transition-[margin] duration-200">
         <p
-          className="text-[length:var(--fs-base)] truncate font-medium text-text-200 group-hover:text-text-100"
+          className={`text-[length:var(--fs-base)] truncate font-medium ${
+            isSelected ? 'text-text-100' : 'text-text-200 group-hover:text-text-100'
+          }`}
           title={displayTitle}
         >
           {displayTitle}

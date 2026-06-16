@@ -1136,6 +1136,7 @@ export function SidePanel({
             <div ref={recentsSelectionRootRef} className="flex-1 overflow-hidden">
               <PinnedBar
                 sessionLookup={sessionLookup}
+                selectedSessionId={selectedSessionId}
                 onSelectSession={(s) => handleSelect(s)}
                 onRenameSession={(sessionId, newTitle) => {
                   const s = sessionLookup.get(sessionId)
