@@ -125,7 +125,7 @@ function PinnedItem({ entry, resolvedSession, isSelected, onSelect, onRename }: 
   return (
     <div
       onClick={handleClick}
-      className={`group relative flex items-start pl-[6px] pr-2 py-1.5 rounded-md cursor-pointer transition-all duration-200 border border-transparent ${
+      className={`group relative flex items-start pl-[6px] pr-2 py-1.5 rounded-lg cursor-pointer transition-all duration-200 border border-transparent ${
         isSelected ? 'bg-bg-000 shadow-sm ring-1 ring-border-200/50' : 'hover:bg-bg-200/40'
       }`}
     >
