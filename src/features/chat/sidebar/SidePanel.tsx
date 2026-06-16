@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
 import { ActiveSessionItem } from './ActiveSessionItem'
 import { NotificationItem } from './NotificationItem'
 import { SidebarFooter } from './SidebarFooter'
+import { PinnedBar } from './PinnedBar'
 import { buildActiveSessionTree } from './activeSessionTree'
 import { getParentPath } from './sidebarUtils'
 import {
@@ -1121,6 +1122,16 @@ export function SidePanel({
           {/* Recents Tab */}
           {sidebarTab === 'recents' && (
             <div ref={recentsSelectionRootRef} className="flex-1 overflow-hidden">
+              <PinnedBar
+                onSelectSession={(sessionId) => {
+                  const s = sessionLookup.get(sessionId)
+                  if (s) { handleSelect(s) }
+                }}
+                onRenameSession={(sessionId, newTitle) => {
+                  const s = sessionLookup.get(sessionId)
+                  if (s) { handleRenameFolderSession(s, newTitle) }
+                }}
+              />
               {sidebarFolderRecents && !search ? (
                 <FolderRecentList
                   projects={folderProjects}
@@ -1204,8 +1215,8 @@ export function SidePanel({
                           {t('common:clear')}
                         </button>
                       </div>
-                    </div>
-                  )}
+                  </div>
+                )}
 
                   {/* Notification history */}
                   {notifications.map((entry: NotificationEntry) => {
