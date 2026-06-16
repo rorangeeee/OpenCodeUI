@@ -96,13 +96,12 @@ function PinnedItem({ entry, onSelect, onRename }: PinnedItemProps) {
       onClick={handleClick}
       className="group relative flex items-center pl-[6px] pr-2 py-1.5 rounded-md cursor-pointer hover:bg-bg-200/40 transition-colors duration-150"
     >
-      <PinIcon className="w-3 h-3 shrink-0 mr-1.5 text-accent-main-100/70" />
       <div className="flex-1 min-w-0 mr-1 group-hover:mr-[52px] transition-[margin] duration-200">
-        <p className="text-[length:var(--fs-sm)] truncate text-text-200 group-hover:text-text-100" title={entry.title}>
+        <p className="text-[length:var(--fs-base)] truncate text-text-200 group-hover:text-text-100" title={entry.title}>
           {entry.title}
         </p>
         {entry.directory && (
-          <p className="text-[length:var(--fs-xxs)] truncate text-text-400 mt-0.5" title={entry.directory}>
+          <p className="text-[length:var(--fs-xs)] truncate text-text-400 mt-0.5" title={entry.directory}>
             {entry.directory.replace(/\\/g, '/').split('/').filter(Boolean).slice(-2).join('/') || entry.directory}
           </p>
         )}

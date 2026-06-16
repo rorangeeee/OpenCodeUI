@@ -34,6 +34,7 @@ import { useSessionContext } from '../../../contexts/useSessionContext'
 import { useLayoutStore, useMessageStore, childSessionStore } from '../../../store'
 import { useBusySessions, useBusyCount } from '../../../store/activeSessionStore'
 import { notificationStore, useNotifications, useUnreadNotificationCount } from '../../../store/notificationStore'
+import { pinnedSessionsStore } from '../../../store/pinnedSessionsStore'
 import type { NotificationEntry } from '../../../store/notificationStore'
 import {
   updateSession,
@@ -278,6 +279,17 @@ export function SidePanel({
 
   const { sessions, isLoading, isLoadingMore, hasMore, search, setSearch, loadMore, deleteSession, refresh } =
     useSessionContext()
+
+  // 过滤已置顶对话，避免在正常列表中冗余显示
+  const pinnedIds = useSyncExternalStore(
+    pinnedSessionsStore.subscribe,
+    () => new Set(pinnedSessionsStore.getSnapshot().map(e => e.sessionId)),
+    () => new Set<string>(),
+  )
+  const visibleSessions = useMemo(
+    () => sessions.filter(s => !pinnedIds.has(s.id)),
+    [sessions, pinnedIds],
+  )
 
   // 缓存通过 API 拉取的 session 数据（sessions 列表中不存在的）
   const [fetchedSessions, setFetchedSessions] = useState<Record<string, ApiSession>>({})
@@ -1151,7 +1163,7 @@ export function SidePanel({
                 </div>
               ) : (
                 <SessionList
-                  sessions={sessions}
+                  sessions={visibleSessions}
                   selectedId={selectedSessionId}
                   isLoading={isLoading}
                   isLoadingMore={isLoadingMore}
