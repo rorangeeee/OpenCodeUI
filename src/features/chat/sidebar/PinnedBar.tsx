@@ -23,7 +23,7 @@ export function PinnedBar({ sessionLookup, selectedSessionId, onSelectSession, o
   if (!entries || entries.length === 0) return null
 
   return (
-    <div className="mx-2 mt-1 mb-1 rounded-[9px] bg-bg-100/60 ring-1 ring-border-200/30 px-1 py-1">
+    <div className="mx-2 mt-1 mb-1 rounded-[12px] bg-bg-100/60 ring-1 ring-border-200/30 px-1 py-1">
       {entries.map(entry => (
         <PinnedItem
           key={entry.sessionId}
