@@ -2,13 +2,18 @@ import { useSyncExternalStore, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PencilIcon, PinIcon } from '../../../components/Icons'
 import { pinnedSessionsStore, type PinnedSessionEntry } from '../../../store/pinnedSessionsStore'
+import { useSessionActiveEntry } from '../../../store/activeSessionStore'
+import { useHasUnreadCompletedNotification } from '../../../store/notificationStore'
+import { formatRelativeTime } from '../../../utils/dateUtils'
+import type { ApiSession } from '../../../api'
 
 interface PinnedBarProps {
-  onSelectSession: (sessionId: string, directory: string) => void
+  sessionLookup: Map<string, ApiSession>
+  onSelectSession: (session: ApiSession) => void
   onRenameSession: (sessionId: string, newTitle: string) => void
 }
 
-export function PinnedBar({ onSelectSession, onRenameSession }: PinnedBarProps) {
+export function PinnedBar({ sessionLookup, onSelectSession, onRenameSession }: PinnedBarProps) {
   const entries = useSyncExternalStore(
     pinnedSessionsStore.subscribe,
     pinnedSessionsStore.getSnapshot,
@@ -22,6 +27,7 @@ export function PinnedBar({ onSelectSession, onRenameSession }: PinnedBarProps) 
         <PinnedItem
           key={entry.sessionId}
           entry={entry}
+          resolvedSession={sessionLookup.get(entry.sessionId)}
           onSelect={onSelectSession}
           onRename={onRenameSession}
         />
@@ -32,41 +38,63 @@ export function PinnedBar({ onSelectSession, onRenameSession }: PinnedBarProps) 
 
 interface PinnedItemProps {
   entry: PinnedSessionEntry
-  onSelect: (sessionId: string, directory: string) => void
+  resolvedSession?: ApiSession
+  onSelect: (session: ApiSession) => void
   onRename: (sessionId: string, newTitle: string) => void
 }
 
-function PinnedItem({ entry, onSelect, onRename }: PinnedItemProps) {
-  const { t } = useTranslation(['commands', 'common'])
+function PinnedItem({ entry, resolvedSession, onSelect, onRename }: PinnedItemProps) {
+  const { t } = useTranslation(['commands', 'common', 'chat'])
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(entry.title)
+  const displayTitle = resolvedSession?.title || entry.title || entry.sessionId.slice(0, 12) + '...'
+
+  // 活跃状态
+  const activeEntry = useSessionActiveEntry(entry.sessionId)
+  const activeStatus = activeEntry
+    ? activeEntry.pendingAction?.type === 'permission'
+      ? { dot: 'bg-warning-100', pulse: false }
+      : activeEntry.pendingAction?.type === 'question'
+        ? { dot: 'bg-info-100', pulse: false }
+        : activeEntry.status.type === 'retry'
+          ? { dot: 'bg-warning-100', pulse: false }
+          : { dot: 'bg-success-100', pulse: true }
+    : null
+  const hasUnreadCompletedNotification = useHasUnreadCompletedNotification(entry.sessionId)
+  const hasStats = Boolean(
+    resolvedSession?.summary &&
+    (resolvedSession.summary.additions > 0 || resolvedSession.summary.deletions > 0 || resolvedSession.summary.files > 0),
+  )
 
   const handleClick = () => {
     if (isEditing) return
-    onSelect(entry.sessionId, entry.directory)
+    if (resolvedSession) {
+      onSelect(resolvedSession)
+    }
   }
 
   const handleUnpin = (e: React.MouseEvent) => {
     e.stopPropagation()
+    ;(e.currentTarget as HTMLElement).blur()
     pinnedSessionsStore.unpin(entry.sessionId)
   }
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setEditTitle(entry.title)
+    setEditTitle(displayTitle)
     setIsEditing(true)
   }
 
   const handleSaveEdit = () => {
     const trimmed = editTitle.trim()
-    if (trimmed && trimmed !== entry.title) {
+    if (trimmed && trimmed !== displayTitle) {
       onRename(entry.sessionId, trimmed)
     }
     setIsEditing(false)
   }
 
   const handleCancelEdit = () => {
-    setEditTitle(entry.title)
+    setEditTitle(displayTitle)
     setIsEditing(false)
   }
 
@@ -94,17 +122,55 @@ function PinnedItem({ entry, onSelect, onRename }: PinnedItemProps) {
   return (
     <div
       onClick={handleClick}
-      className="group relative flex items-center pl-[6px] pr-2 py-1.5 rounded-md cursor-pointer hover:bg-bg-200/40 transition-colors duration-150"
+      className="group relative flex items-start pl-[6px] pr-2 py-1.5 rounded-md cursor-pointer hover:bg-bg-200/40 transition-colors duration-150"
     >
       <div className="flex-1 min-w-0 mr-1 group-hover:mr-[52px] transition-[margin] duration-200">
-        <p className="text-[length:var(--fs-base)] truncate text-text-200 group-hover:text-text-100" title={entry.title}>
-          {entry.title}
+        <p
+          className="text-[length:var(--fs-base)] truncate font-medium text-text-200 group-hover:text-text-100"
+          title={displayTitle}
+        >
+          {displayTitle}
         </p>
-        {entry.directory && (
-          <p className="text-[length:var(--fs-xs)] truncate text-text-400 mt-0.5" title={entry.directory}>
-            {entry.directory.replace(/\\/g, '/').split('/').filter(Boolean).slice(-2).join('/') || entry.directory}
-          </p>
-        )}
+        <div className="flex items-center mt-1.5 h-4 text-[length:var(--fs-xxs)] text-text-400 gap-1 overflow-hidden">
+          {/* 活跃状态标记 */}
+          {activeStatus ? (
+            <>
+              <span className="relative shrink-0 flex items-center justify-center w-3 h-3">
+                <span className={`absolute w-1.5 h-1.5 rounded-full ${activeStatus.dot}`} />
+                {activeStatus.pulse && (
+                  <span className={`absolute w-1.5 h-1.5 rounded-full ${activeStatus.dot} animate-ping opacity-50`} />
+                )}
+              </span>
+              <span className="opacity-30 shrink-0">·</span>
+            </>
+          ) : hasUnreadCompletedNotification ? (
+            <>
+              <span className="relative shrink-0 flex items-center justify-center w-3 h-3" title={t('chat:notification.completed')}>
+                <span className="absolute w-1.5 h-1.5 rounded-full bg-accent-main-100" />
+              </span>
+              <span className="opacity-30 shrink-0">·</span>
+            </>
+          ) : null}
+          {/* 时间 */}
+          {resolvedSession?.time?.updated && (
+            <span className="shrink-0 opacity-60">{formatRelativeTime(resolvedSession.time.updated)}</span>
+          )}
+          {/* Stats */}
+          {hasStats && resolvedSession?.summary && (
+            <>
+              <span className="opacity-30">·</span>
+              <span className="shrink-0 opacity-50">
+                +{resolvedSession.summary.additions}/-{resolvedSession.summary.deletions}
+              </span>
+              {resolvedSession.summary.files > 0 && (
+                <>
+                  <span className="opacity-30">·</span>
+                  <span className="shrink-0 opacity-50">{resolvedSession.summary.files} files</span>
+                </>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* 操作按钮 */}
