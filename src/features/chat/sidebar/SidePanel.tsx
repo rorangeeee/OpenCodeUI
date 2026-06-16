@@ -281,15 +281,15 @@ export function SidePanel({
     useSessionContext()
 
   // 过滤已置顶对话，避免在正常列表中冗余显示
-  const pinnedIds = useSyncExternalStore(
+  const pinnedEntries = useSyncExternalStore(
     pinnedSessionsStore.subscribe,
-    () => new Set(pinnedSessionsStore.getSnapshot().map(e => e.sessionId)),
-    () => new Set<string>(),
+    pinnedSessionsStore.getSnapshot,
+    pinnedSessionsStore.getSnapshot,
   )
-  const visibleSessions = useMemo(
-    () => sessions.filter(s => !pinnedIds.has(s.id)),
-    [sessions, pinnedIds],
-  )
+  const visibleSessions = useMemo(() => {
+    const pinnedSet = new Set(pinnedEntries.map(e => e.sessionId))
+    return sessions.filter(s => !pinnedSet.has(s.id))
+  }, [sessions, pinnedEntries])
 
   // 缓存通过 API 拉取的 session 数据（sessions 列表中不存在的）
   const [fetchedSessions, setFetchedSessions] = useState<Record<string, ApiSession>>({})
