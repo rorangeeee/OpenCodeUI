@@ -126,6 +126,7 @@ const DEFAULT_GLASS_EFFECT = true
 const DEFAULT_QUEUE_FOLLOWUP_MESSAGES = false
 const DEFAULT_MANUAL_TERMINAL_TITLES = false
 const DEFAULT_EXTERNAL_FILE_DROP_MODE: ExternalFileDropMode = 'upload-first'
+const DEFAULT_OUTLINE_CURRENT_HIGHLIGHT = true
 
 export interface ThemeState {
   /** 当前选中的主题风格 ID */
@@ -176,6 +177,8 @@ export interface ThemeState {
   manualTerminalTitles: boolean
   /** 外部文件拖入输入框时的处理方式 */
   externalFileDropMode: ExternalFileDropMode
+  /** 是否在对话历史导航中高亮当前对话位置 */
+  outlineCurrentHighlight: boolean
 }
 
 export type ThemeBackup = ThemeState
@@ -208,6 +211,7 @@ const STORAGE_KEY_GLASS_EFFECT = 'glass-effect'
 const STORAGE_KEY_QUEUE_FOLLOWUP_MESSAGES = 'queue-followup-messages'
 const STORAGE_KEY_MANUAL_TERMINAL_TITLES = 'manual-terminal-titles'
 const STORAGE_KEY_EXTERNAL_FILE_DROP_MODE = 'external-file-drop-mode'
+const STORAGE_KEY_OUTLINE_CURRENT_HIGHLIGHT = 'outline-current-highlight'
 
 // ============================================
 // DOM Style Element IDs
@@ -329,6 +333,12 @@ class ThemeStore {
     const externalFileDropMode: ExternalFileDropMode =
       savedExternalFileDropMode === 'mention' ? 'mention' : DEFAULT_EXTERNAL_FILE_DROP_MODE
 
+    const savedOutlineCurrentHighlight = localStorage.getItem(STORAGE_KEY_OUTLINE_CURRENT_HIGHLIGHT)
+    const outlineCurrentHighlight =
+      savedOutlineCurrentHighlight === null
+        ? DEFAULT_OUTLINE_CURRENT_HIGHLIGHT
+        : savedOutlineCurrentHighlight === 'true'
+
     this.state = {
       presetId: normalizedPreset,
       colorMode: savedMode,
@@ -354,6 +364,7 @@ class ThemeStore {
       queueFollowupMessages,
       manualTerminalTitles,
       externalFileDropMode,
+      outlineCurrentHighlight,
     }
   }
 
@@ -434,6 +445,9 @@ class ThemeStore {
   }
   get externalFileDropMode() {
     return this.state.externalFileDropMode
+  }
+  get outlineCurrentHighlight() {
+    return this.state.outlineCurrentHighlight
   }
 
   /** 获取当前主题预设（内置主题返回对象，自定义返回 undefined） */
@@ -709,6 +723,13 @@ class ThemeStore {
     this.emit()
   }
 
+  setOutlineCurrentHighlight(enabled: boolean) {
+    if (this.state.outlineCurrentHighlight === enabled) return
+    this.state = { ...this.state, outlineCurrentHighlight: enabled }
+    localStorage.setItem(STORAGE_KEY_OUTLINE_CURRENT_HIGHLIGHT, String(enabled))
+    this.emit()
+  }
+
   // ---- Theme Application ----
 
   /** 初始化：应用当前主题到 DOM */
@@ -954,6 +975,10 @@ function normalizeThemeBackup(raw: unknown): ThemeBackup {
         ? parsed.manualTerminalTitles
         : DEFAULT_MANUAL_TERMINAL_TITLES,
     externalFileDropMode: parsed?.externalFileDropMode === 'mention' ? 'mention' : DEFAULT_EXTERNAL_FILE_DROP_MODE,
+    outlineCurrentHighlight:
+      typeof parsed?.outlineCurrentHighlight === 'boolean'
+        ? parsed.outlineCurrentHighlight
+        : DEFAULT_OUTLINE_CURRENT_HIGHLIGHT,
   }
 }
 
@@ -996,4 +1021,5 @@ export function importThemeBackup(raw: unknown): void {
   localStorage.setItem(STORAGE_KEY_QUEUE_FOLLOWUP_MESSAGES, String(backup.queueFollowupMessages))
   localStorage.setItem(STORAGE_KEY_MANUAL_TERMINAL_TITLES, String(backup.manualTerminalTitles))
   localStorage.setItem(STORAGE_KEY_EXTERNAL_FILE_DROP_MODE, backup.externalFileDropMode)
+  localStorage.setItem(STORAGE_KEY_OUTLINE_CURRENT_HIGHLIGHT, String(backup.outlineCurrentHighlight))
 }

@@ -90,6 +90,8 @@
     "conversationExperienceDesc": "Message density, reasoning style, and step summary fields",
     "collapseLongMessages": "Collapse Long Messages",
     "collapseLongMessagesDesc": "Auto-collapse lengthy user messages",
+    "outlineCurrentHighlight": "Highlight Current Position",
+    "outlineCurrentHighlightDesc": "Mark the user prompt that owns the current viewport in the right-side history rail",
     "omoInputHistorySimplify": "Simplify OMO History",
     "omoInputHistorySimplifyDesc": "Filter out OMO internal marker messages from input history navigation",
     "descriptiveToolSteps": "Descriptive Steps",
